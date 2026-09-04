@@ -83,7 +83,7 @@ export const ShipmentDetail: React.FC<ShipmentDetailProps> = ({ shipmentId, onBa
   const handleRemediateResidue = async () => {
     setRemediating(true);
     try {
-      await remediateShipment(shipmentId, 0.31); // Passing residue value
+      await remediateShipment(shipmentId, 0.31);
       await loadAll();
     } catch (err) {
       console.error('Remediation error:', err);
@@ -336,6 +336,8 @@ export const ShipmentDetail: React.FC<ShipmentDetailProps> = ({ shipmentId, onBa
         isOpen={showWhatIfModal}
         onClose={() => setShowWhatIfModal(false)}
         shipmentId={shipment.id}
+        currentStatus={shipment.status}
+        currentScore={shipment.compliance_score}
       />
     </div>
   );

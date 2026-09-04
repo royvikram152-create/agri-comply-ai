@@ -72,7 +72,6 @@ def analyze_shipment(shipment_id: str):
     if shipment_id not in store.shipments:
         raise HTTPException(status_code=404, detail="Shipment not found")
     
-    # Run the 5-agent orchestration pipeline
     result = orchestrator_instance.run_pipeline(shipment_id)
     return {
         "message": "Analysis pipeline executed successfully",
@@ -84,7 +83,7 @@ def analyze_shipment(shipment_id: str):
 def remediate_shipment(shipment_id: str, payload: Dict[str, Any] = Body(...)):
     """
     Phase H: "What Changed?" remediation trigger.
-    Simulates or receives new passing residue test (e.g., residue = 0.31 mg/kg).
+    Uploads/simulates new passing residue test (e.g., residue = 0.31 mg/kg).
     Re-evaluates compliance pipeline and records BEFORE vs ACTION vs AFTER transition.
     """
     if shipment_id not in store.shipments:
@@ -93,14 +92,12 @@ def remediate_shipment(shipment_id: str, payload: Dict[str, Any] = Body(...)):
     before_status = store.shipments[shipment_id].status.value
     before_score = store.shipments[shipment_id].compliance_score
     
-    # Passing residue value (0.31 mg/kg <= 0.50 mg/kg limit)
     new_residue = payload.get("residue_value", 0.31)
     
     # Update farm record
     if shipment_id in store.farm_records:
         store.farm_records[shipment_id].residue_value = new_residue
     
-    # Add new Residue Test document if not present
     now = datetime.now(timezone.utc)
     res_doc = Document(
         id=f"DOC-RES-{uuid.uuid4().hex[:4]}",
@@ -123,7 +120,6 @@ def remediate_shipment(shipment_id: str, payload: Dict[str, Any] = Body(...)):
     if shipment_id not in store.documents:
         store.documents[shipment_id] = []
     
-    # Replace existing residue test if any
     store.documents[shipment_id] = [d for d in store.documents[shipment_id] if d.document_type != DocumentType.RESIDUE_TEST_REPORT]
     store.documents[shipment_id].append(res_doc)
 
@@ -138,7 +134,7 @@ def remediate_shipment(shipment_id: str, payload: Dict[str, Any] = Body(...)):
         "before": {
             "status": before_status,
             "compliance_score": before_score,
-            "critical_gaps": 1,
+            "critical_gaps": 1 if before_status == "HOLD" else 0,
             "residue_value": 0.82
         },
         "action": {
@@ -153,12 +149,11 @@ def remediate_shipment(shipment_id: str, payload: Dict[str, Any] = Body(...)):
             "critical_gaps": 0,
             "residue_value": new_residue
         },
-        "transition_summary": f"Residue re-test passed ({new_residue} mg/kg <= 0.50 mg/kg limit). Shipment status updated from {before_status} to {after_status}!"
+        "transition_summary": f"Residue re-test passed ({new_residue} mg/kg <= 0.50 mg/kg demo evaluation threshold). Official legal framework: Regulation (EC) No 396/2005. Compliance status updated from {before_status} to {after_status}!"
     }
     
     store.remediation_history[shipment_id] = remediation_summary
 
-    # Audit event for remediation
     store.audit_events[shipment_id].append(
         AuditEvent(
             id=f"AUD-REM-{uuid.uuid4().hex[:6]}",
@@ -177,17 +172,22 @@ def remediate_shipment(shipment_id: str, payload: Dict[str, Any] = Body(...)):
 @router.post("/shipments/{shipment_id}/what-if")
 def simulate_what_if(shipment_id: str, payload: Dict[str, Any] = Body(...)):
     """
-    Phase K: What-If simulation mode.
-    Simulates non-destructive parameter changes (destination, deadline, residue).
+    Phase K: Non-destructive What-If simulation mode.
+    Simulates parameter changes (destination, deadline, residue) against the compliance engine.
+    Does NOT mutate the real shipment state!
     """
     if shipment_id not in store.shipments:
         raise HTTPException(status_code=404, detail="Shipment not found")
+
+    real_shipment = store.shipments[shipment_id]
+    farm_rec = store.farm_records.get(shipment_id)
+    real_residue = farm_rec.residue_value if farm_rec else 0.82
 
     sim_destination = payload.get("destination", "European Union")
     sim_deadline = payload.get("deadline_days", 7)
     sim_residue = payload.get("residue_value", 0.31)
 
-    # Calculate non-destructive simulation
+    # Non-destructive simulation calculation
     passed = sim_residue <= 0.50
     sim_score = 100.0 if passed else 72.0
     sim_status = "READY_FOR_APPROVAL" if passed else "HOLD"
@@ -195,6 +195,13 @@ def simulate_what_if(shipment_id: str, payload: Dict[str, Any] = Body(...)):
     return {
         "shipment_id": shipment_id,
         "is_simulation": True,
+        "current_real_shipment": {
+            "status": real_shipment.status.value,
+            "compliance_score": real_shipment.compliance_score,
+            "risk_level": real_shipment.risk_level,
+            "residue_value": real_residue,
+            "unit": "mg/kg"
+        },
         "parameters": {
             "destination": sim_destination,
             "deadline_days": sim_deadline,

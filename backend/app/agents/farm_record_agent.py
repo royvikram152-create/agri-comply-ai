@@ -34,8 +34,8 @@ class FarmRecordCheckAgent(BaseAgent):
                 harvest_date="2026-08-30"
             )
 
-        # Configured operational threshold for hackathon demo scenario evaluation
-        # Note: Official EU legal LOQ for Imidacloprid in fresh mangoes (Code 0163010) under Regulation (EC) No 396/2005 is 0.01 mg/kg.
+        # Operational threshold configured for hackathon demo scenario evaluation
+        # Note: Official EU legal LOQ for Imidacloprid in fresh mangoes under Regulation (EC) No 396/2005 is 0.01 mg/kg.
         mrl_thresholds = {
             "Imidacloprid": 0.50,
             "Buprofezin": 0.05,
@@ -60,24 +60,24 @@ class FarmRecordCheckAgent(BaseAgent):
             "actual_data": f"{actual_value} {farm_record.unit}",
             "actual_residue": actual_value,
             "mrl_threshold": threshold,
-            "allowed_limit": f"{threshold} {farm_record.unit} (Demo Threshold)",
+            "allowed_limit": f"{threshold} {farm_record.unit} (Demo Evaluation Threshold)",
             "difference": f"+{difference} {farm_record.unit}" if difference > 0 else f"{difference} {farm_record.unit}",
             "unit": farm_record.unit,
             "status": status,
             "severity": severity,
             "title": f"Pesticide MRL Residue Check ({farm_record.active_ingredient})",
             "reason": (
-                f"Residue value of {actual_value} {farm_record.unit} is within configured threshold of {threshold} {farm_record.unit}."
+                f"Residue value of {actual_value} {farm_record.unit} is within demo evaluation threshold of {threshold} {farm_record.unit}."
                 if passed else
-                f"Residue value of {actual_value} {farm_record.unit} EXCEEDS configured threshold of {threshold} {farm_record.unit} by +{difference} {farm_record.unit}."
+                f"Residue value of {actual_value} {farm_record.unit} EXCEEDS demo evaluation threshold of {threshold} {farm_record.unit} by +{difference} {farm_record.unit}."
             ),
-            "applicable_requirement": f"Regulation (EC) No 396/2005 — EU MRL LOQ = 0.01 mg/kg | Demo Threshold = {threshold} mg/kg",
+            "applicable_requirement": f"Regulation (EC) No 396/2005 (EU Harmonised MRL Framework) — Demo Threshold = {threshold} mg/kg",
             "source_organization": "European Food Safety Authority (EFSA) / EU Pesticides Database",
             "source_title": "Regulation (EC) No 396/2005 (Product Code 0163010)",
             "source_type": "OFFICIAL SOURCE",
             "source_evidence": "European Food Safety Authority (EFSA) / EU Pesticides Database under Regulation (EC) No 396/2005",
             "source_url": "https://ec.europa.eu/food/plant/pesticides/eu-pesticides-database/start/screen/home",
-            "recommended_action": "Pass inspection" if passed else "Conduct official lab re-testing or batch wash/decontamination before shipment."
+            "recommended_action": "Pass inspection" if passed else "Obtain accredited laboratory re-testing and follow approved corrective-action procedure before shipment."
         }
 
         execution_time = (time.time() - start_time) * 1000
