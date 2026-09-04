@@ -174,3 +174,48 @@ def test_txt_and_json_document_upload_and_remediation():
     # Check that residue MRL violation gap is cleared
     mrl_gaps = [f for f in reproc_findings if "Pesticide MRL Violation" in f.get("title", "")]
     assert len(mrl_gaps) == 0
+
+def test_evidence_provenance_modal_data_structures():
+    """Verify that missing document findings state explicit missing evidence without logical contradictions."""
+    s_res = client.post("/api/shipments", json={
+        "crop": "Mango",
+        "variety": "Alphonso",
+        "origin": "India",
+        "destination": "European Union",
+        "quantity_kg": 1000.0,
+        "deadline_days": 5
+    })
+    shipment_id = s_res.json()["id"]
+
+    proc_res = client.post(f"/api/shipments/{shipment_id}/process")
+    assert proc_res.status_code == 200
+    findings = proc_res.json()["compliance_result"]["findings"]
+
+    # 1. Assert missing document finding structure
+    missing_phyto = next((f for f in findings if "PHYTOSANITARY_CERT" in f.get("title", "") or "PHYTOSANITARY_CERT" in f.get("reason", "")), None)
+    assert missing_phyto is not None
+    assert missing_phyto["status"] == "FAIL"
+    assert missing_phyto["actual_data"] == "No uploaded document classified as PHYTOSANITARY_CERT."
+    assert "No uploaded evidence" in missing_phyto["source_evidence"]
+    assert missing_phyto["source_type"] == "APPLICATION/DOCUMENT RULE"
+    assert missing_phyto["actual_data"] != "PHYTOSANITARY_CERT"
+
+    # 2. Upload document and assert present document finding structure
+    phyto_pdf = create_sample_pdf(["Phytosanitary Certificate India NPPO", "Crop: Mango"])
+    client.post(
+        f"/api/shipments/{shipment_id}/documents",
+        files={"file": ("phytosanitary_cert.pdf", phyto_pdf, "application/pdf")},
+        data={"document_type": "PHYTOSANITARY_CERT"}
+    )
+    reproc = client.post(f"/api/shipments/{shipment_id}/reprocess")
+    assert reproc.status_code == 200
+    updated_findings = reproc.json()["compliance_result"]["findings"]
+    missing_phyto_after = [f for f in updated_findings if "PHYTOSANITARY_CERT" in f.get("title", "") and f.get("status") == "FAIL"]
+    assert len(missing_phyto_after) == 0
+
+    # 3. Assert seed demo shipment compatibility
+    demo_res = client.get("/api/shipments/SHP-MANGO-001/compliance")
+    assert demo_res.status_code == 200
+    demo_result = demo_res.json()
+    assert demo_result["shipment_id"] == "SHP-MANGO-001"
+

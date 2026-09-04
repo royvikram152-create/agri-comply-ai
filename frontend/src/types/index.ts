@@ -48,6 +48,11 @@ export interface ComplianceFinding {
   recommended_action: string;
   deadline_impact_days: number;
   resolved: boolean;
+  source_type?: 'OFFICIAL SOURCE' | 'APPLICATION/DOCUMENT RULE' | 'DEMO DATA' | string;
+  document_type?: string;
+  file_name?: string;
+  allowed_limit?: string;
+  difference?: string;
 }
 
 export interface ComplianceResult {

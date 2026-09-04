@@ -33,6 +33,11 @@ class ComplianceFinding(BaseModel):
     recommended_action: str
     deadline_impact_days: int = 0
     resolved: bool = False
+    source_type: Optional[str] = "OFFICIAL SOURCE"
+    document_type: Optional[str] = None
+    file_name: Optional[str] = None
+    allowed_limit: Optional[str] = None
+    difference: Optional[str] = None
 
 class ComplianceResult(BaseModel):
     shipment_id: str

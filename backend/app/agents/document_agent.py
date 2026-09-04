@@ -37,9 +37,11 @@ class DocumentAssemblyAgent(BaseAgent):
                     "status": "FAIL",
                     "severity": "CRITICAL",
                     "reason": f"Mandatory export document '{req_type.value}' is missing.",
-                    "recommended_action": f"Upload official {req_type.value} document.",
+                    "actual_data": f"No uploaded document classified as {req_type.value}.",
                     "applicable_requirement": "Regulation (EU) 2019/2072 Annex VII",
-                    "source_evidence": "European Union Border Control Post mandatory import documentation rules."
+                    "source_evidence": "No uploaded evidence. European Union Border Control Post mandatory import documentation rules.",
+                    "source_type": "APPLICATION/DOCUMENT RULE",
+                    "recommended_action": f"Upload official {req_type.value} document."
                 })
                 warnings.append(f"Missing mandatory document: {req_type.value}")
             else:
@@ -52,8 +54,11 @@ class DocumentAssemblyAgent(BaseAgent):
                     "status": "PASS",
                     "severity": "INFO",
                     "reason": f"Document '{doc.file_name}' present and valid.",
-                    "applicable_requirement": "Customs Import Documentation",
-                    "source_evidence": f"Document ID: {doc.id}"
+                    "actual_data": f"File: {doc.file_name} | Document Type: {doc.document_type.value}",
+                    "applicable_requirement": "Customs Import Documentation Protocol",
+                    "source_evidence": f"Uploaded File: {doc.file_name} (Document ID: {doc.id})",
+                    "source_type": "DEMO DATA" if getattr(doc, "is_demo", False) else "APPLICATION/DOCUMENT RULE",
+                    "recommended_action": "Document verified."
                 })
 
         # 2. Run Cross-Document Contradiction Engine
@@ -67,7 +72,8 @@ class DocumentAssemblyAgent(BaseAgent):
                     "reason": c.get("message"),
                     "actual_data": str(c.get("metadata")),
                     "applicable_requirement": "Regulation (EU) 2017/625 Article 89(2) - Customs Declaration Accuracy",
-                    "source_evidence": "Cross-Document Contradiction Engine",
+                    "source_evidence": "Cross-Document Contradiction Engine verification across uploaded certificates",
+                    "source_type": "APPLICATION/DOCUMENT RULE",
                     "recommended_action": "Re-issue documents to ensure identical values across all export certificates."
                 })
                 warnings.append(f"Contradiction: {c.get('title')}")
