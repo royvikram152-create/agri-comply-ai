@@ -1,6 +1,13 @@
 import { Shipment, ComplianceResult, RiskAssessment, Document, AuditEvent, RemediationSummary, AgentInfo } from '../types';
 
-const API_BASE = '/api';
+const getApiBase = (): string => {
+  const envUrl = import.meta.env.VITE_API_URL;
+  if (!envUrl) return '/api';
+  const cleanUrl = envUrl.endsWith('/') ? envUrl.slice(0, -1) : envUrl;
+  return cleanUrl.endsWith('/api') ? cleanUrl : `${cleanUrl}/api`;
+};
+
+const API_BASE = getApiBase();
 
 export async function fetchHealth() {
   const res = await fetch(`${API_BASE}/health`);
