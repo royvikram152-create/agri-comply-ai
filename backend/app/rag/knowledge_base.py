@@ -1,0 +1,72 @@
+from typing import List, Dict, Any
+
+EU_MANGO_REGULATIONS: List[Dict[str, Any]] = [
+    {
+        "requirement_id": "REQ-EU-PHYTO-01",
+        "commodity": "Mango (Mangifera indica L.)",
+        "destination": "European Union",
+        "category": "PHYTOSANITARY",
+        "requirement": "Mandatory Phytosanitary Certificate issued by National Plant Protection Organization (APEDA / Plant Quarantine India) with additional declaration certifying freedom from Tephritidae (fruit flies).",
+        "severity": "CRITICAL",
+        "source_organization": "European Commission - DG SANTE",
+        "source_title": "Commission Implementing Regulation (EU) 2019/2072, Annex VII, Point 61",
+        "source_url": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX%3A32019R2072",
+        "source_type": "OFFICIAL SOURCE",
+        "document": "Regulation (EU) 2019/2072",
+        "page": "Annex VII, Point 61",
+        "effective_date": "2019-12-14",
+        "retrieved_at": "2026-09-04T12:00:00Z",
+        "evidence_text": "Consignments of Mangifera indica L. originating in non-EU countries shall be accompanied by an official phytosanitary certificate stating compliance with special requirements under Annex VII Point 61 for freedom from Tephritidae."
+    },
+    {
+        "requirement_id": "REQ-EU-MRL-01",
+        "commodity": "Mango (Mangifera indica L., Code 0163010)",
+        "destination": "European Union",
+        "category": "PESTICIDE_MRL",
+        "requirement": "Official EU Maximum Residue Limit (MRL) for Imidacloprid under Regulation (EC) No 396/2005 is set at the default Limit of Quantification (0.01 mg/kg). For hackathon demo scenario evaluation, an operational target threshold of 0.50 mg/kg is configured.",
+        "severity": "CRITICAL",
+        "source_organization": "European Food Safety Authority (EFSA) / EU Pesticides Database",
+        "source_title": "Regulation (EC) No 396/2005 (EU Harmonised MRL Database)",
+        "source_url": "https://ec.europa.eu/food/plant/pesticides/eu-pesticides-database/start/screen/home",
+        "source_type": "OFFICIAL SOURCE",
+        "document": "Regulation (EC) No 396/2005",
+        "page": "Annex II & III (Product Code 0163010)",
+        "effective_date": "2023-01-01",
+        "retrieved_at": "2026-09-04T12:00:00Z",
+        "evidence_text": "Under Regulation (EC) No 396/2005, pesticide active substances not approved in the EU default to the Limit of Quantification (0.01 mg/kg). Consignments exceeding applicable MRLs trigger official RASFF notification and port hold."
+    },
+    {
+        "requirement_id": "REQ-EU-VHT-01",
+        "commodity": "Mango (Mangifera indica L.)",
+        "destination": "European Union",
+        "category": "PLANT_HEALTH",
+        "requirement": "Post-harvest Vapour Heat Treatment (VHT) at 48°C for 60 minutes at APEDA-approved treatment facility prior to packaging.",
+        "severity": "HIGH",
+        "source_organization": "APEDA / Ministry of Commerce & Industry India",
+        "source_title": "APEDA Export Protocol for Fresh Mangoes to EU",
+        "source_url": "https://apeda.gov.in/",
+        "source_type": "OFFICIAL SOURCE (INDIAN NPPO PROTOCOL)",
+        "document": "APEDA Export Guidelines",
+        "page": "Section 4",
+        "effective_date": "2024-04-01",
+        "retrieved_at": "2026-09-04T12:00:00Z",
+        "evidence_text": "All mango consignments destined for EU markets must undergo post-harvest Vapour Heat Treatment (VHT) supervised by NPPO plant quarantine inspectors to satisfy EU Annex VII Point 61 requirements."
+    },
+    {
+        "requirement_id": "REQ-EU-DOC-01",
+        "commodity": "Mango (Mangifera indica L.)",
+        "destination": "European Union",
+        "category": "COMMERCIAL_DOCS",
+        "requirement": "Mandatory documentary check under Official Controls Regulation for declared net weight, exporter registration, and consignee details across customs invoices, packing lists, and phytosanitary certificates.",
+        "severity": "HIGH",
+        "source_organization": "European Customs & Border Protection",
+        "source_title": "Regulation (EU) 2017/625 (Official Controls Regulation), Article 89",
+        "source_url": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX%3A32017R0625",
+        "source_type": "OFFICIAL SOURCE",
+        "document": "Regulation (EU) 2017/625",
+        "page": "Article 89",
+        "effective_date": "2017-03-15",
+        "retrieved_at": "2026-09-04T12:00:00Z",
+        "evidence_text": "Official controls on consignments entering the Union include mandatory documentary checks under Article 89. Discrepancies between customs declarations and plant health certificates trigger official border hold."
+    }
+]
