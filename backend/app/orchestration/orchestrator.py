@@ -9,6 +9,7 @@ from app.agents.gap_reporting_agent import GapReportingAgent
 from app.compliance.rule_engine import rule_engine_instance
 from app.compliance.decision_engine import decision_engine_instance
 from app.compliance.risk_engine import risk_engine_instance
+from app.compliance.confidence_engine import confidence_engine_instance
 from app.database.store import store
 from app.models.compliance import ComplianceResult, DecisionCode
 from app.models.audit import AuditEvent
@@ -44,7 +45,7 @@ class AgentOrchestrator:
 
         # 3. Farm Record Check Agent
         farm_rec = store.farm_records.get(shipment_id)
-        farm_input = farm_rec.dict() if farm_rec else {}
+        farm_input = farm_rec.model_dump() if hasattr(farm_rec, 'model_dump') else farm_rec.dict() if farm_rec else {}
         if custom_residue is not None:
             farm_input["residue_value"] = custom_residue
 
@@ -76,13 +77,21 @@ class AgentOrchestrator:
         )
         store.risk_assessments[shipment_id] = risk_eval
 
-        # 8. Update Shipment State
+        # 8. Deterministic Assessment Confidence Engine (Evidence Completeness & Quality)
+        confidence_val = confidence_engine_instance.calculate_confidence(
+            shipment=shipment,
+            reg_findings=reg_res.findings,
+            farm_findings=farm_res.findings,
+            documents=docs
+        )
+
+        # 9. Update Shipment State (Preserves all status logic)
         shipment.status = decision_eval["shipment_status"]
         shipment.compliance_score = rule_eval["compliance_score"]
         shipment.risk_level = risk_eval.risk_level
+        shipment.assessment_confidence = confidence_val
         shipment.updated_at = now
 
-        # Convert findings to structured ComplianceFinding list
         findings_summary = {
             "pass": rule_eval["passed_checks"],
             "fail": rule_eval["critical_violations"] + rule_eval["high_violations"],
@@ -94,6 +103,7 @@ class AgentOrchestrator:
             overall_status=decision_eval["decision_code"],
             decision_reason=decision_eval["decision_reason"],
             compliance_score=rule_eval["compliance_score"],
+            assessment_confidence=confidence_val,
             risk_level=risk_eval.risk_level,
             findings=gap_res.findings,
             summary=findings_summary,
@@ -101,7 +111,7 @@ class AgentOrchestrator:
         )
         store.compliance_results[shipment_id] = result
 
-        # 9. Record Pipeline Audit Event
+        # 10. Record Pipeline Audit Event
         audit_event = AuditEvent(
             id=f"AUD-RUN-{uuid.uuid4().hex[:6]}",
             shipment_id=shipment_id,
@@ -111,6 +121,7 @@ class AgentOrchestrator:
             description=f"Pipeline finished with status '{decision_eval['decision_code'].value}'. Reason: {decision_eval['decision_reason']}",
             metadata={
                 "compliance_score": rule_eval["compliance_score"],
+                "assessment_confidence": confidence_val,
                 "decision_code": decision_eval["decision_code"].value,
                 "critical_violations": rule_eval["critical_violations"]
             },

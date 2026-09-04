@@ -39,6 +39,7 @@ class ComplianceResult(BaseModel):
     overall_status: DecisionCode
     decision_reason: str
     compliance_score: float  # 0 to 100
+    assessment_confidence: int = 94  # Deterministic evidence completeness confidence (0 to 100)
     risk_level: str  # LOW, MEDIUM, HIGH, CRITICAL
     findings: List[ComplianceFinding]
     summary: Dict[str, int]  # count of pass, fail, warning

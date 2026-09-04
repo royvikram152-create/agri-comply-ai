@@ -19,12 +19,12 @@ class ExporterProfile(BaseModel):
     registration_number: str = "APEDA/2024/IND-908"
 
 class ShipmentCreate(BaseModel):
-    crop: str = Field(..., example="Mango")
-    variety: Optional[str] = Field("Alphonso", example="Alphonso")
-    origin: str = Field("India", example="India")
-    destination: str = Field("European Union", example="European Union")
-    quantity_kg: float = Field(2000.0, example=2000.0)
-    deadline_days: int = Field(7, example=7)
+    crop: str = Field(..., json_schema_extra={"example": "Mango"})
+    variety: Optional[str] = Field("Alphonso", json_schema_extra={"example": "Alphonso"})
+    origin: str = Field("India", json_schema_extra={"example": "India"})
+    destination: str = Field("European Union", json_schema_extra={"example": "European Union"})
+    quantity_kg: float = Field(2000.0, json_schema_extra={"example": 2000.0})
+    deadline_days: int = Field(7, json_schema_extra={"example": 7})
     exporter_notes: Optional[str] = None
 
 class Shipment(BaseModel):
@@ -42,3 +42,4 @@ class Shipment(BaseModel):
     exporter: ExporterProfile = Field(default_factory=ExporterProfile)
     compliance_score: float = 0.0
     risk_level: str = "MEDIUM"
+    assessment_confidence: int = 94

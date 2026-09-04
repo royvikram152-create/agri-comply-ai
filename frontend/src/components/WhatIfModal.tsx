@@ -44,6 +44,7 @@ export const WhatIfModal: React.FC<WhatIfModalProps> = ({
   const realShipmentInfo = result?.current_real_shipment || {
     status: currentStatus,
     compliance_score: currentScore,
+    assessment_confidence: 94,
     residue_value: currentStatus === 'APPROVED' || currentStatus === 'READY_FOR_APPROVAL' ? 0.31 : 0.82,
     unit: 'mg/kg'
   };
@@ -126,6 +127,7 @@ export const WhatIfModal: React.FC<WhatIfModalProps> = ({
                     {realShipmentInfo.status}
                   </div>
                   <div className="text-slate-300 text-[11px] mt-0.5 font-medium">Score: {realShipmentInfo.compliance_score} / 100</div>
+                  <div className="text-indigo-400 text-[10px] mt-0.5">Real AI Confidence: {realShipmentInfo.assessment_confidence}%</div>
                   <div className="text-slate-400 text-[10px] mt-0.5">Residue: {realShipmentInfo.residue_value} {realShipmentInfo.unit || 'mg/kg'}</div>
                 </div>
 
@@ -136,6 +138,7 @@ export const WhatIfModal: React.FC<WhatIfModalProps> = ({
                     {result.simulated_outcome.status}
                   </div>
                   <div className="text-emerald-300 text-[11px] mt-0.5 font-medium">Simulated Score: {result.simulated_outcome.compliance_score} / 100</div>
+                  <div className="text-indigo-300 text-[10px] mt-0.5">Simulated Assessment Confidence: {result.simulated_outcome.simulated_assessment_confidence}%</div>
                   <div className="text-slate-300 text-[10px] mt-0.5">Simulated Residue: {result.parameters.residue_value} mg/kg</div>
                 </div>
               </div>

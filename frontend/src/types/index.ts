@@ -28,6 +28,7 @@ export interface Shipment {
   status: ShipmentStatus;
   exporter: ExporterProfile;
   compliance_score: number;
+  assessment_confidence: number;
   risk_level: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
 }
 
@@ -52,6 +53,7 @@ export interface ComplianceResult {
   overall_status: ShipmentStatus;
   decision_reason: string;
   compliance_score: number;
+  assessment_confidence: number;
   risk_level: string;
   findings: ComplianceFinding[];
   summary: {

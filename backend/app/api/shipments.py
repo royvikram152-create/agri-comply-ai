@@ -42,7 +42,8 @@ def create_shipment(payload: ShipmentCreate):
             registration_number="APEDA/2024/IND-908"
         ),
         compliance_score=0.0,
-        risk_level="MEDIUM"
+        risk_level="MEDIUM",
+        assessment_confidence=94
     )
     
     store.shipments[shipment_id] = shipment
@@ -173,8 +174,8 @@ def remediate_shipment(shipment_id: str, payload: Dict[str, Any] = Body(...)):
 def simulate_what_if(shipment_id: str, payload: Dict[str, Any] = Body(...)):
     """
     Phase K: Non-destructive What-If simulation mode.
-    Simulates parameter changes (destination, deadline, residue) against the compliance engine.
-    Does NOT mutate the real shipment state!
+    Simulates parameter changes against the compliance engine.
+    Does NOT mutate the real shipment state or real assessment_confidence!
     """
     if shipment_id not in store.shipments:
         raise HTTPException(status_code=404, detail="Shipment not found")
@@ -187,10 +188,10 @@ def simulate_what_if(shipment_id: str, payload: Dict[str, Any] = Body(...)):
     sim_deadline = payload.get("deadline_days", 7)
     sim_residue = payload.get("residue_value", 0.31)
 
-    # Non-destructive simulation calculation
     passed = sim_residue <= 0.50
     sim_score = 100.0 if passed else 72.0
     sim_status = "READY_FOR_APPROVAL" if passed else "HOLD"
+    sim_confidence = 94 if passed else 89
 
     return {
         "shipment_id": shipment_id,
@@ -198,6 +199,7 @@ def simulate_what_if(shipment_id: str, payload: Dict[str, Any] = Body(...)):
         "current_real_shipment": {
             "status": real_shipment.status.value,
             "compliance_score": real_shipment.compliance_score,
+            "assessment_confidence": real_shipment.assessment_confidence,
             "risk_level": real_shipment.risk_level,
             "residue_value": real_residue,
             "unit": "mg/kg"
@@ -209,6 +211,7 @@ def simulate_what_if(shipment_id: str, payload: Dict[str, Any] = Body(...)):
         },
         "simulated_outcome": {
             "compliance_score": sim_score,
+            "simulated_assessment_confidence": sim_confidence,
             "status": sim_status,
             "critical_gaps": 0 if passed else 1,
             "risk_level": "LOW" if passed else "HIGH"
