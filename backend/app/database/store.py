@@ -44,7 +44,9 @@ class DataStore:
                 registration_number="APEDA/2024/IND-908"
             ),
             compliance_score=72.0,
-            risk_level="HIGH"
+            risk_level="HIGH",
+            assessment_confidence=94,
+            is_demo=True
         )
         self.shipments[shipment_id] = shipment
         

@@ -72,6 +72,24 @@ npm run dev
 
 ---
 
+## Real Document Processing & Multi-Format Ingestion Engine
+
+AGRICOMPLY AI supports **Real Document Ingestion** for user-created shipments. Users can register export consignments and upload actual files (`.pdf`, `.docx`, `.txt`, `.csv`, `.json`).
+
+### Key Processing Capabilities
+* **Multi-Format Extraction**:
+  * **PDF**: Page-by-page text extraction (`pypdf`) with exact page provenance (`Page 1`, `Page 2`).
+  * **DOCX**: Paragraph and table cell extraction (`python-docx`).
+  * **TXT**: Plaintext decoding.
+  * **CSV**: Row/column key-value extraction.
+  * **JSON**: Direct structured schema field extraction.
+* **Instant Byte Processing for Serverless**: Uploaded file bytes are parsed immediately upon arrival at the backend. Extracted structured evidence and page provenance maps are saved to state, avoiding dependency on persistent serverless file storage.
+* **Strict No-Demo-Fallback Rule**: User-created shipments rely exclusively on uploaded evidence. Missing fields return `"Could not extract this field from uploaded evidence."` and trigger compliance `HOLD`.
+* **Deterministic Cross-Document Contradiction Engine**: Compares extracted values across documents (e.g. Commercial Invoice 2000 kg vs. Packing List 1800 kg; commodity mismatches; batch number discrepancies) and generates `CRITICAL` findings.
+* **Real Remediation & Reprocessing**: Uploading replacement documents and clicking **Reprocess Shipment** re-extracts evidence and updates compliance readiness in real time.
+
+---
+
 ## 2. Problem Statement
 
 Cross-border agricultural trade requires navigate a complex web of international regulations, phytosanitary mandates, pesticide Maximum Residue Limits (MRLs), and mandatory documentation. Agricultural exporters and producers face severe operational friction:

@@ -7,6 +7,7 @@ import { EvidenceModal } from '../components/EvidenceModal';
 import { WhatChangedCard } from '../components/WhatChangedCard';
 import { HumanApprovalModal } from '../components/HumanApprovalModal';
 import { WhatIfModal } from '../components/WhatIfModal';
+import { DocumentUploadPanel } from '../components/DocumentUploadPanel';
 import { Timeline } from '../components/Timeline';
 import {
   ArrowLeft,
@@ -43,7 +44,6 @@ export const ShipmentDetail: React.FC<ShipmentDetailProps> = ({ shipmentId, onBa
   const [auditEvents, setAuditEvents] = useState<AuditEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [analyzing, setAnalyzing] = useState(false);
-  const [remediating, setRemediating] = useState(false);
 
   // Modals state
   const [selectedFinding, setSelectedFinding] = useState<ComplianceFinding | null>(null);
@@ -82,18 +82,6 @@ export const ShipmentDetail: React.FC<ShipmentDetailProps> = ({ shipmentId, onBa
     }
   };
 
-  const handleRemediateResidue = async () => {
-    setRemediating(true);
-    try {
-      await remediateShipment(shipmentId, 0.31);
-      await loadAll();
-    } catch (err) {
-      console.error('Remediation error:', err);
-    } finally {
-      setRemediating(false);
-    }
-  };
-
   if (loading || !data) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -105,10 +93,11 @@ export const ShipmentDetail: React.FC<ShipmentDetailProps> = ({ shipmentId, onBa
     );
   }
 
-  const { shipment, compliance_result, risk_assessment, remediation_history } = data;
+  const { shipment, compliance_result, remediation_history } = data;
   const criticalGapsCount = compliance_result?.findings?.filter(f => f.severity === 'CRITICAL' && f.status === 'FAIL').length || 0;
   const hasCriticalGaps = criticalGapsCount > 0;
-  const confidenceValue = shipment.assessment_confidence || compliance_result?.assessment_confidence || 94;
+  const confidenceValue = shipment.assessment_confidence || compliance_result?.assessment_confidence || 0;
+  const isDemo = shipment.id === 'SHP-MANGO-001' || shipment.is_demo === true;
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
@@ -116,7 +105,7 @@ export const ShipmentDetail: React.FC<ShipmentDetailProps> = ({ shipmentId, onBa
       <div className="flex items-center justify-between">
         <button
           onClick={onBack}
-          className="inline-flex items-center space-x-2 text-xs font-semibold text-slate-400 hover:text-slate-200 transition"
+          className="inline-flex items-center space-x-2 text-xs font-semibold text-slate-400 hover:text-slate-200 transition cursor-pointer"
         >
           <ArrowLeft className="w-4 h-4" />
           <span>Back to Dashboard</span>
@@ -125,7 +114,7 @@ export const ShipmentDetail: React.FC<ShipmentDetailProps> = ({ shipmentId, onBa
         <div className="flex items-center space-x-3">
           <button
             onClick={() => setShowWhatIfModal(true)}
-            className="px-3.5 py-2 bg-slate-800 hover:bg-slate-750 text-indigo-300 border border-indigo-500/30 text-xs font-semibold rounded-xl flex items-center space-x-1.5 transition"
+            className="px-3.5 py-2 bg-slate-800 hover:bg-slate-750 text-indigo-300 border border-indigo-500/30 text-xs font-semibold rounded-xl flex items-center space-x-1.5 transition cursor-pointer"
           >
             <Sliders className="w-4 h-4" />
             <span>What-If Simulation</span>
@@ -134,7 +123,7 @@ export const ShipmentDetail: React.FC<ShipmentDetailProps> = ({ shipmentId, onBa
           <button
             onClick={handleRunPipeline}
             disabled={analyzing}
-            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl shadow-lg flex items-center space-x-1.5 transition disabled:opacity-50"
+            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl shadow-lg flex items-center space-x-1.5 transition disabled:opacity-50 cursor-pointer"
           >
             <Play className={`w-4 h-4 ${analyzing ? 'animate-spin' : ''}`} />
             <span>{analyzing ? 'Executing Agents...' : 'Re-Run 5-Agent Pipeline'}</span>
@@ -142,7 +131,7 @@ export const ShipmentDetail: React.FC<ShipmentDetailProps> = ({ shipmentId, onBa
 
           <button
             onClick={() => setShowApprovalModal(true)}
-            className={`px-4 py-2 text-xs font-bold rounded-xl shadow-lg flex items-center space-x-1.5 transition ${
+            className={`px-4 py-2 text-xs font-bold rounded-xl shadow-lg flex items-center space-x-1.5 transition cursor-pointer ${
               hasCriticalGaps
                 ? 'bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed'
                 : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-900/30'
@@ -161,6 +150,15 @@ export const ShipmentDetail: React.FC<ShipmentDetailProps> = ({ shipmentId, onBa
             <div className="flex items-center space-x-3">
               <h2 className="text-2xl font-extrabold text-slate-100 font-mono tracking-tight">{shipment.id}</h2>
               <StatusBadge status={shipment.status} size="lg" />
+              {isDemo ? (
+                <span className="px-2 py-0.5 bg-amber-500/10 text-amber-400 border border-amber-500/20 text-xs font-bold rounded">
+                  DEMO SHIPMENT
+                </span>
+              ) : (
+                <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-bold rounded">
+                  USER SHIPMENT
+                </span>
+              )}
             </div>
             <p className="text-xs text-slate-400 mt-1 font-medium">
               {shipment.exporter.name} • {shipment.crop} ({shipment.variety}) • {shipment.origin} → {shipment.destination} • {shipment.quantity_kg.toLocaleString()} kg
@@ -176,7 +174,7 @@ export const ShipmentDetail: React.FC<ShipmentDetailProps> = ({ shipmentId, onBa
 
             <div className="h-8 w-px bg-slate-800"></div>
 
-            {/* Metric 2: AI Assessment Confidence (Distinct Metric) */}
+            {/* Metric 2: AI Assessment Confidence */}
             <div className="relative group">
               <div className="text-[10px] text-slate-400 uppercase font-extrabold tracking-wider flex items-center justify-end cursor-help">
                 <span>AI Assessment Confidence</span>
@@ -186,7 +184,6 @@ export const ShipmentDetail: React.FC<ShipmentDetailProps> = ({ shipmentId, onBa
                 <BrainCircuit className="w-5 h-5 mr-1 text-indigo-400" />
                 {confidenceValue}%
               </div>
-              {/* Tooltip */}
               <div className="absolute right-0 top-full mt-2 w-64 p-2.5 bg-slate-900 border border-slate-700 text-[11px] text-slate-300 rounded-xl shadow-2xl z-50 hidden group-hover:block font-normal text-left">
                 Confidence reflects the completeness and quality of available evidence. It does not determine regulatory compliance.
               </div>
@@ -206,52 +203,28 @@ export const ShipmentDetail: React.FC<ShipmentDetailProps> = ({ shipmentId, onBa
         </div>
       </div>
 
-      {/* Agent Workflow Execution Status Row */}
-      <div className="bg-slate-950/80 border border-slate-800 rounded-2xl p-4 shadow-lg">
-        <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center justify-between">
-          <div className="flex items-center">
-            <Bot className="w-4 h-4 mr-1.5 text-emerald-400" />
-            <span>5 Specialized Agents Execution Pipeline</span>
-          </div>
-          <div className="text-[11px] font-semibold text-indigo-400 flex items-center">
-            <BrainCircuit className="w-3.5 h-3.5 mr-1" />
-            AI Assessment Confidence — {confidenceValue}%
-          </div>
-        </div>
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-2 text-xs">
-          <div className="p-2.5 bg-slate-900 border border-emerald-500/30 rounded-xl text-center">
-            <div className="text-emerald-400 font-bold">1. Exporter Agent</div>
-            <div className="text-[10px] text-slate-400 mt-0.5">Metadata Parsed</div>
-          </div>
-          <div className="p-2.5 bg-slate-900 border border-emerald-500/30 rounded-xl text-center">
-            <div className="text-emerald-400 font-bold">2. Regulatory Agent</div>
-            <div className="text-[10px] text-slate-400 mt-0.5">EU RAG Retrieved</div>
-          </div>
-          <div className={`p-2.5 bg-slate-900 border rounded-xl text-center ${hasCriticalGaps ? 'border-rose-500/50 bg-rose-950/20' : 'border-emerald-500/30'}`}>
-            <div className={`font-bold ${hasCriticalGaps ? 'text-rose-400' : 'text-emerald-400'}`}>3. Farm Agent</div>
-            <div className="text-[10px] text-slate-400 mt-0.5">{hasCriticalGaps ? 'Residue Exceeded' : 'Pass'}</div>
-          </div>
-          <div className="p-2.5 bg-slate-900 border border-emerald-500/30 rounded-xl text-center">
-            <div className="text-emerald-400 font-bold">4. Document Agent</div>
-            <div className="text-[10px] text-slate-400 mt-0.5">Checklist Verified</div>
-          </div>
-          <div className="p-2.5 bg-slate-900 border border-emerald-500/30 rounded-xl text-center">
-            <div className="text-emerald-400 font-bold">5. Gap Agent</div>
-            <div className="text-[10px] text-slate-400 mt-0.5">Remediation Rank</div>
-          </div>
-        </div>
-      </div>
-
-      {/* Phase H: "What Changed?" Remediation Card */}
-      <WhatChangedCard
-        summary={remediation_history || null}
-        onSimulateRemediation={handleRemediateResidue}
-        loading={remediating}
+      {/* Document Upload & Extraction Panel */}
+      <DocumentUploadPanel
+        shipment={shipment}
+        documents={documents}
+        onRefresh={loadAll}
       />
 
-      {/* Main Grid Section: Findings & Evidence vs Timeline & Documents */}
+      {/* Phase H: "What Changed?" Demo Remediation Card */}
+      {isDemo && (
+        <WhatChangedCard
+          summary={remediation_history || null}
+          onSimulateRemediation={async () => {
+            await remediateShipment(shipmentId, 0.31);
+            await loadAll();
+          }}
+          loading={false}
+        />
+      )}
+
+      {/* Main Grid Section: Findings vs Audit Trail */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left 2-Cols: Compliance Findings & Evidence */}
+        {/* Left 2-Cols: Compliance Findings */}
         <div className="lg:col-span-2 space-y-6">
           <div className="bg-slate-950/60 border border-slate-800 rounded-2xl p-6 shadow-xl">
             <div className="flex items-center justify-between mb-4">
@@ -293,7 +266,7 @@ export const ShipmentDetail: React.FC<ShipmentDetailProps> = ({ shipmentId, onBa
 
                       <button
                         onClick={() => setSelectedFinding(finding)}
-                        className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-emerald-400 border border-emerald-500/30 rounded-lg text-xs font-semibold flex items-center space-x-1 transition"
+                        className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-emerald-400 border border-emerald-500/30 rounded-lg text-xs font-semibold flex items-center space-x-1 transition cursor-pointer"
                       >
                         <ExternalLink className="w-3 h-3" />
                         <span>Why? / View Evidence</span>
@@ -309,27 +282,6 @@ export const ShipmentDetail: React.FC<ShipmentDetailProps> = ({ shipmentId, onBa
                   </div>
                 );
               })}
-            </div>
-          </div>
-
-          {/* Export Documents Checklist */}
-          <div className="bg-slate-950/60 border border-slate-800 rounded-2xl p-6 shadow-xl">
-            <h3 className="font-bold text-slate-100 text-base uppercase tracking-wider mb-4 flex items-center">
-              <FileText className="w-5 h-5 mr-2 text-blue-400" />
-              Validated Export Documentation Package ({documents.length})
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {documents.map((doc) => (
-                <div key={doc.id} className="p-3.5 bg-slate-900 border border-slate-800 rounded-xl flex items-center justify-between">
-                  <div>
-                    <div className="text-xs font-bold text-slate-200">{doc.document_type}</div>
-                    <div className="text-[11px] text-slate-400 truncate max-w-[180px]">{doc.file_name}</div>
-                  </div>
-                  <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold rounded-full">
-                    {doc.status}
-                  </span>
-                </div>
-              ))}
             </div>
           </div>
         </div>

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { AppShell } from './components/AppShell';
 import { Dashboard } from './pages/Dashboard';
 import { ShipmentDetail } from './pages/ShipmentDetail';
-import { NewShipmentModal } from './pages/NewShipmentModal';
+import { CreateShipmentModal } from './components/CreateShipmentModal';
 import { fetchShipments, fetchAgents } from './api/client';
 import { Shipment, AgentInfo } from './types';
 import { Bot, Scale, ExternalLink } from 'lucide-react';
@@ -168,7 +168,7 @@ export default function App() {
         </div>
       ) : null}
 
-      <NewShipmentModal
+      <CreateShipmentModal
         isOpen={showNewModal}
         onClose={() => setShowNewModal(false)}
         onShipmentCreated={handleShipmentCreated}

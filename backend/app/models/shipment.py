@@ -5,6 +5,7 @@ from datetime import datetime
 
 class ShipmentStatus(str, Enum):
     CREATED = "CREATED"
+    DOCUMENTS_PENDING = "DOCUMENTS_PENDING"
     ANALYZING = "ANALYZING"
     REVIEW_REQUIRED = "REVIEW_REQUIRED"
     HOLD = "HOLD"
@@ -42,4 +43,5 @@ class Shipment(BaseModel):
     exporter: ExporterProfile = Field(default_factory=ExporterProfile)
     compliance_score: float = 0.0
     risk_level: str = "MEDIUM"
-    assessment_confidence: int = 94
+    assessment_confidence: int = 0
+    is_demo: bool = False

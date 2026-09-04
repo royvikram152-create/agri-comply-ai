@@ -1,5 +1,6 @@
 export type ShipmentStatus = 
   | 'CREATED' 
+  | 'DOCUMENTS_PENDING'
   | 'ANALYZING' 
   | 'REVIEW_REQUIRED' 
   | 'HOLD' 
@@ -30,6 +31,7 @@ export interface Shipment {
   compliance_score: number;
   assessment_confidence: number;
   risk_level: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+  is_demo?: boolean;
 }
 
 export interface ComplianceFinding {
@@ -91,6 +93,11 @@ export interface Document {
   issue_date?: string;
   expiry_date?: string;
   extracted_fields: Record<string, any>;
+  extracted_text?: string;
+  provenance_map?: Record<string, any>;
+  file_format?: string;
+  file_size?: number;
+  classification_confidence?: number;
 }
 
 export interface AuditEvent {

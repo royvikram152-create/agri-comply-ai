@@ -34,7 +34,7 @@ def create_shipment(payload: ShipmentCreate):
         deadline_days=payload.deadline_days,
         created_at=now,
         updated_at=now,
-        status=ShipmentStatus.CREATED,
+        status=ShipmentStatus.DOCUMENTS_PENDING,
         exporter=ExporterProfile(
             exporter_id="EXP-IND-908",
             name="Royal Agri Exports Ltd",
@@ -43,7 +43,8 @@ def create_shipment(payload: ShipmentCreate):
         ),
         compliance_score=0.0,
         risk_level="MEDIUM",
-        assessment_confidence=94
+        assessment_confidence=0,
+        is_demo=False
     )
     
     store.shipments[shipment_id] = shipment
@@ -55,7 +56,7 @@ def create_shipment(payload: ShipmentCreate):
             event_type="SHIPMENT_CREATED",
             agent_name="Exporter Interaction Agent",
             title="Shipment Created",
-            description=f"New export shipment registered for {payload.crop} ({payload.origin} -> {payload.destination})",
+            description=f"New export shipment registered for {payload.crop} ({payload.origin} -> {payload.destination}). Awaiting real document uploads.",
             timestamp=now
         )
     ]
@@ -69,23 +70,62 @@ def get_shipment(shipment_id: str):
     return store.shipments[shipment_id]
 
 @router.post("/shipments/{shipment_id}/analyze")
-def analyze_shipment(shipment_id: str):
+@router.post("/shipments/{shipment_id}/process")
+def process_shipment_documents(shipment_id: str):
     if shipment_id not in store.shipments:
         raise HTTPException(status_code=404, detail="Shipment not found")
     
     result = orchestrator_instance.run_pipeline(shipment_id)
     return {
-        "message": "Analysis pipeline executed successfully",
+        "message": "Real document processing & multi-agent pipeline executed successfully",
         "compliance_result": result,
         "shipment": store.shipments[shipment_id]
     }
 
+@router.post("/shipments/{shipment_id}/reprocess")
+def reprocess_shipment(shipment_id: str):
+    if shipment_id not in store.shipments:
+        raise HTTPException(status_code=404, detail="Shipment not found")
+
+    before_status = store.shipments[shipment_id].status.value
+    before_score = store.shipments[shipment_id].compliance_score
+
+    result = orchestrator_instance.run_pipeline(shipment_id)
+
+    after_status = store.shipments[shipment_id].status.value
+    after_score = store.shipments[shipment_id].compliance_score
+
+    now = datetime.now(timezone.utc)
+    summary = {
+        "shipment_id": shipment_id,
+        "before_status": before_status,
+        "before_score": before_score,
+        "after_status": after_status,
+        "after_score": after_score,
+        "compliance_result": result,
+        "shipment": store.shipments[shipment_id]
+    }
+
+    if shipment_id not in store.audit_events:
+        store.audit_events[shipment_id] = []
+    store.audit_events[shipment_id].append(
+        AuditEvent(
+            id=f"AUD-REP-{uuid.uuid4().hex[:6]}",
+            shipment_id=shipment_id,
+            event_type="REPROCESSING_PERFORMED",
+            agent_name="Agent Orchestrator",
+            title="Shipment Evidence Reprocessed",
+            description=f"Reprocessed real uploaded documents. Status transitioned from '{before_status}' to '{after_status}'. Compliance score: {after_score}/100.",
+            timestamp=now
+        )
+    )
+
+    return summary
+
 @router.post("/shipments/{shipment_id}/remediate")
 def remediate_shipment(shipment_id: str, payload: Dict[str, Any] = Body(...)):
     """
-    Phase H: "What Changed?" remediation trigger.
-    Uploads/simulates new passing residue test (e.g., residue = 0.31 mg/kg).
-    Re-evaluates compliance pipeline and records BEFORE vs ACTION vs AFTER transition.
+    Phase H: Remediation trigger for demo and user shipments.
     """
     if shipment_id not in store.shipments:
         raise HTTPException(status_code=404, detail="Shipment not found")
@@ -95,7 +135,6 @@ def remediate_shipment(shipment_id: str, payload: Dict[str, Any] = Body(...)):
     
     new_residue = payload.get("residue_value", 0.31)
     
-    # Update farm record
     if shipment_id in store.farm_records:
         store.farm_records[shipment_id].residue_value = new_residue
     
@@ -124,7 +163,6 @@ def remediate_shipment(shipment_id: str, payload: Dict[str, Any] = Body(...)):
     store.documents[shipment_id] = [d for d in store.documents[shipment_id] if d.document_type != DocumentType.RESIDUE_TEST_REPORT]
     store.documents[shipment_id].append(res_doc)
 
-    # Re-run Orchestrator Pipeline
     result = orchestrator_instance.run_pipeline(shipment_id, custom_residue=new_residue)
     
     after_status = store.shipments[shipment_id].status.value
@@ -150,7 +188,7 @@ def remediate_shipment(shipment_id: str, payload: Dict[str, Any] = Body(...)):
             "critical_gaps": 0,
             "residue_value": new_residue
         },
-        "transition_summary": f"Residue re-test passed ({new_residue} mg/kg <= 0.50 mg/kg demo evaluation threshold). Official legal framework: Regulation (EC) No 396/2005. Compliance status updated from {before_status} to {after_status}!"
+        "transition_summary": f"Residue re-test passed ({new_residue} mg/kg <= 0.50 mg/kg evaluation threshold). Compliance status updated from {before_status} to {after_status}!"
     }
     
     store.remediation_history[shipment_id] = remediation_summary
@@ -174,8 +212,6 @@ def remediate_shipment(shipment_id: str, payload: Dict[str, Any] = Body(...)):
 def simulate_what_if(shipment_id: str, payload: Dict[str, Any] = Body(...)):
     """
     Phase K: Non-destructive What-If simulation mode.
-    Simulates parameter changes against the compliance engine.
-    Does NOT mutate the real shipment state or real assessment_confidence!
     """
     if shipment_id not in store.shipments:
         raise HTTPException(status_code=404, detail="Shipment not found")

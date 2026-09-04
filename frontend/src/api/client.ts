@@ -43,6 +43,37 @@ export async function createShipment(data: {
   return res.json();
 }
 
+export async function uploadRealDocument(shipmentId: string, file: File, documentType?: string): Promise<Document> {
+  const formData = new FormData();
+  formData.append('file', file);
+  if (documentType) {
+    formData.append('document_type', documentType);
+  }
+
+  const res = await fetch(`${API_BASE}/shipments/${shipmentId}/documents`, {
+    method: 'POST',
+    body: formData,
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: 'Upload failed' }));
+    throw new Error(err.detail || 'Failed to upload document');
+  }
+  return res.json();
+}
+
+export async function processShipment(id: string): Promise<{ compliance_result: ComplianceResult; shipment: Shipment }> {
+  const res = await fetch(`${API_BASE}/shipments/${id}/process`, { method: 'POST' });
+  if (!res.ok) throw new Error('Failed to process shipment documents');
+  return res.json();
+}
+
+export async function reprocessShipment(id: string): Promise<{ compliance_result: ComplianceResult; shipment: Shipment }> {
+  const res = await fetch(`${API_BASE}/shipments/${id}/reprocess`, { method: 'POST' });
+  if (!res.ok) throw new Error('Failed to reprocess shipment');
+  return res.json();
+}
+
 export async function analyzeShipment(id: string): Promise<{ compliance_result: ComplianceResult; shipment: Shipment }> {
   const res = await fetch(`${API_BASE}/shipments/${id}/analyze`, { method: 'POST' });
   if (!res.ok) throw new Error('Failed to analyze shipment');

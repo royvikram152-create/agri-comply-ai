@@ -13,6 +13,7 @@ from app.compliance.confidence_engine import confidence_engine_instance
 from app.database.store import store
 from app.models.compliance import ComplianceResult, DecisionCode
 from app.models.audit import AuditEvent
+from app.models.document import DocumentType
 
 class AgentOrchestrator:
     def __init__(self):
@@ -43,17 +44,40 @@ class AgentOrchestrator:
             "destination": shipment.destination
         })
 
-        # 3. Farm Record Check Agent
+        # 3. Extract evidence from uploaded real documents
+        docs = store.documents.get(shipment_id, [])
+        extracted_residue = custom_residue
+        extracted_active_ingredient = None
+
+        if extracted_residue is None:
+            for doc in docs:
+                fields = doc.extracted_fields or {}
+                if doc.document_type in [DocumentType.RESIDUE_TEST_REPORT, DocumentType.FARM_TREATMENT_RECORD]:
+                    res_val = fields.get("residue_value")
+                    if res_val is not None and isinstance(res_val, (int, float)):
+                        extracted_residue = float(res_val)
+                    ai_val = fields.get("active_ingredient")
+                    if ai_val and isinstance(ai_val, str) and ai_val != "Could not extract this field from uploaded evidence.":
+                        extracted_active_ingredient = ai_val
+
+        # Farm Record Check Agent
         farm_rec = store.farm_records.get(shipment_id)
         farm_input = farm_rec.model_dump() if hasattr(farm_rec, 'model_dump') else farm_rec.dict() if farm_rec else {}
-        if custom_residue is not None:
-            farm_input["residue_value"] = custom_residue
-
-        farm_res = self.farm_agent.execute({"farm_record": farm_input})
+        
+        farm_agent_input = {
+            "farm_record": farm_input,
+            "extracted_residue": extracted_residue,
+            "extracted_active_ingredient": extracted_active_ingredient,
+            "is_demo": shipment.is_demo,
+            "residue_value": custom_residue
+        }
+        farm_res = self.farm_agent.execute(farm_agent_input)
 
         # 4. Document Assembly Agent
-        docs = store.documents.get(shipment_id, [])
-        doc_res = self.document_agent.execute({"documents": docs})
+        doc_res = self.document_agent.execute({
+            "documents": docs,
+            "shipment": shipment
+        })
 
         # 5. Gap Reporting Agent
         gap_res = self.gap_agent.execute({
@@ -77,7 +101,7 @@ class AgentOrchestrator:
         )
         store.risk_assessments[shipment_id] = risk_eval
 
-        # 8. Deterministic Assessment Confidence Engine (Evidence Completeness & Quality)
+        # 8. Deterministic Assessment Confidence Engine
         confidence_val = confidence_engine_instance.calculate_confidence(
             shipment=shipment,
             reg_findings=reg_res.findings,
@@ -85,7 +109,7 @@ class AgentOrchestrator:
             documents=docs
         )
 
-        # 9. Update Shipment State (Preserves all status logic)
+        # 9. Update Shipment State
         shipment.status = decision_eval["shipment_status"]
         shipment.compliance_score = rule_eval["compliance_score"]
         shipment.risk_level = risk_eval.risk_level

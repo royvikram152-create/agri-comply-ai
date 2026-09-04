@@ -10,6 +10,9 @@ class DocumentType(str, Enum):
     PACKING_LIST = "PACKING_LIST"
     RESIDUE_TEST_REPORT = "RESIDUE_TEST_REPORT"
     BILL_OF_LADING = "BILL_OF_LADING"
+    FARM_TREATMENT_RECORD = "FARM_TREATMENT_RECORD"
+    CERTIFICATE_OF_ORIGIN = "CERTIFICATE_OF_ORIGIN"
+    SUPPORTING_DOC = "SUPPORTING_DOC"
 
 class DocumentStatus(str, Enum):
     VALID = "VALID"
@@ -29,6 +32,11 @@ class Document(BaseModel):
     issue_date: Optional[str] = None
     expiry_date: Optional[str] = None
     extracted_fields: Dict[str, Any] = {}
+    extracted_text: Optional[str] = None
+    provenance_map: Dict[str, Any] = {}
+    file_format: Optional[str] = None
+    file_size: Optional[int] = None
+    classification_confidence: float = 1.0
 
 class DocumentValidationResult(BaseModel):
     document_type: DocumentType

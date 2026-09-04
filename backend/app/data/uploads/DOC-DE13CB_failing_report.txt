@@ -1,0 +1,4 @@
+Laboratory Residue Test Report
+Product: Mango
+Active Ingredient: Imidacloprid
+Measured Residue: 0.82 mg/kg
